@@ -1,0 +1,31 @@
+{
+  "SchemaVersion": 1,
+  "Name": "AzureSphereIoTCentral",
+  "ComponentId": "25025d2c-66da-4448-bae1-ac26fcdd3627",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [
+    "--ConnectionType",
+    "DPS",
+    "--ScopeID",
+    "0ne000F25AF"
+  ],
+  "Capabilities": {
+    "Gpio": [
+      "$CONNECTED_LED",
+      "$CO2_ALERT",
+      "$LED_RED",
+      "$LED_GREEN",
+      "$LED_BLUE"
+    ],
+    "I2cMaster": [
+      "$I2C_CO2_SENSOR"
+    ],
+    "AllowedConnections": [
+      "global.azure-devices-provisioning.net",
+      "iot-hub-dps-azure-sphere.azure-devices-provisioning.net",
+      "iot-hub-azure-sphere.azure-devices.net"
+    ],
+    "DeviceAuthentication": "9d7e79eb-e021-43ce-9f2b-fa944b447494"
+  },
+  "ApplicationType": "Default"
+}

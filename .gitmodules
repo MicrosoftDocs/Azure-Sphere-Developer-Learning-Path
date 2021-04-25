@@ -1,3 +1,4 @@
-[submodule "samples/CO2_Monitor/azure_sphere_co2/AzureSphereDevX"]
-	path = samples/CO2_Monitor/azure_sphere_co2/AzureSphereDevX
-	url = https://github.com/gloveboxes/AzureSphereDevX.git
+
+[submodule "samples/CO2_Monitor/src/HighLevelApp/AzureSphereDevX"]
+	path = samples/CO2_Monitor/src/HighLevelApp/AzureSphereDevX
+	url = https://github.com/microsoft/Azure-Sphere-DevX.git
