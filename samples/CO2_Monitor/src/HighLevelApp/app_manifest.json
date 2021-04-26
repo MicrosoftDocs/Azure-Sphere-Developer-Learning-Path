@@ -7,7 +7,7 @@
     "--ConnectionType",
     "DPS",
     "--ScopeID",
-    "0ne000F25AF"
+    "Your_ID_Scope"
   ],
   "Capabilities": {
     "Gpio": [
