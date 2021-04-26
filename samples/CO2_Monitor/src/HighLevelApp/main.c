@@ -178,7 +178,7 @@ static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
 /// Check status of connection to Azure IoT
 /// </summary>
 static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
-	bool first_connect = true;
+	static bool first_connect = true;
 
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
