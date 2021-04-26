@@ -117,6 +117,7 @@ static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
 static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 	bool first_connect = true;
 	struct location_info* locInfo = NULL;
+	float lng, lat;
 
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
@@ -131,8 +132,12 @@ static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 		if (first_connect) {
 			first_connect = false;
 			locInfo = GetLocationData();
-			dx_deviceTwinReportState(&reportedLatitude, &locInfo->lat);
-			dx_deviceTwinReportState(&reportedLongitude, &locInfo->lng);
+
+			lat = (float)locInfo->lat;
+			lng = (float)locInfo->lng;
+
+			dx_deviceTwinReportState(&reportedLatitude, &lat);
+			dx_deviceTwinReportState(&reportedLongitude, &lng);
 			dx_deviceTwinReportState(&reportedCountryCode, &locInfo->countryCode);
 		}
 	} else if (dx_isNetworkReady()) {
