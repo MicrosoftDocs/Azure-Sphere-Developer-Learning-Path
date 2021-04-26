@@ -52,6 +52,8 @@ DX_USER_CONFIG dx_config;
 enum LEDS { RED, GREEN, BLUE, UNKNOWN };
 static enum LEDS current_led = UNKNOWN;
 
+struct location_info* locInfo = NULL;
+
 static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
 
 static float co2_ppm = NAN, temperature = NAN, relative_humidity = NAN;
@@ -92,7 +94,7 @@ DX_TIMER* timerSet[] = {
 };
 
 // Define the message to be sent to Azure IoT Hub
-static const char* MsgTemplate = "{ \"CO2\": %3.2f, \"Temperature\": %3.2f, \"Humidity\": \"%3.1f\", \"MsgId\":%d }";
+static const char* MsgTemplate = "{ \"CO2\": %3.2f, \"Temperature\": %3.2f, \"Humidity\": \"%3.1f\", \"Longitude\", %f, \"Latitude\":%f, \"MsgId\":%d }";
 // Attach these properties when sending telemetry to Azure IoT Hub
 static DX_MESSAGE_PROPERTY* telemetryMessageProperties[] = {
 	&(DX_MESSAGE_PROPERTY) { .key = "appid", .value = "co2monitor" },
@@ -102,56 +104,6 @@ static DX_MESSAGE_PROPERTY* telemetryMessageProperties[] = {
 };
 
 /*Timer event handlers******************************************/
-
-static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
-	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
-		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
-		return;
-	}
-	dx_gpioOff(&azureIotConnectedLed);
-}
-
-/// <summary>
-/// Check status of connection to Azure IoT
-/// </summary>
-static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
-	bool first_connect = true;
-	struct location_info* locInfo = NULL;
-	float lng, lat;
-
-	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
-		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
-		return;
-	}
-	if (dx_azureIsConnected()) {
-		dx_gpioOn(&azureIotConnectedLed);
-		// on for 1300ms off for 100ms = 1400 ms in total
-		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
-		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){1, 300 * OneMS});
-
-		if (first_connect) {
-			first_connect = false;
-			locInfo = GetLocationData();
-
-			lat = (float)locInfo->lat;
-			lng = (float)locInfo->lng;
-
-			dx_deviceTwinReportState(&reportedLatitude, &lat);
-			dx_deviceTwinReportState(&reportedLongitude, &lng);
-			dx_deviceTwinReportState(&reportedCountryCode, &locInfo->countryCode);
-		}
-	} else if (dx_isNetworkReady()) {
-		dx_gpioOn(&azureIotConnectedLed);
-		// on for 100ms off for 1300ms = 1400 ms in total
-		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
-		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
-	} else {
-		dx_gpioOn(&azureIotConnectedLed);
-		// on for 700ms off for 700ms = 1400 ms in total
-		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
-		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 700 * OneMS});
-	}
-}
 
 /// <summary>
 /// Turn off CO2 Buzzer
@@ -180,12 +132,18 @@ static void CO2AlertBuzzerOnHandler(EventLoopTimer* eventLoopTimer) {
 
 static void PublishTelemetryHandler(EventLoopTimer* eventLoopTimer) {
 	static int msgId = 0;
+	float lng, lat;
+
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
 		return;
 	}
 	if (!isnan(co2_ppm)) {
-		if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, MsgTemplate, co2_ppm, temperature, relative_humidity, ++msgId) > 0) {
+
+		lng = locInfo == NULL ? NAN : (float)locInfo->lng;
+		lat = locInfo == NULL ? NAN : (float)locInfo->lat;
+
+		if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, MsgTemplate, co2_ppm, temperature, relative_humidity, lng, lat, ++msgId) > 0) {
 			Log_Debug("%s\n", msgBuffer);
 			dx_azureMsgSendWithProperties(msgBuffer, telemetryMessageProperties, NELEMS(telemetryMessageProperties));
 		}
@@ -207,6 +165,53 @@ static void MeasureSensorHandler(EventLoopTimer* eventLoopTimer) {
 
 	SetHvacStatusColour((int)temperature);
 }
+
+static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
+	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
+		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
+		return;
+	}
+	dx_gpioOff(&azureIotConnectedLed);
+}
+
+/// <summary>
+/// Check status of connection to Azure IoT
+/// </summary>
+static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
+	bool first_connect = true;
+
+	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
+		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
+		return;
+	}
+	if (dx_azureIsConnected()) {
+		dx_gpioOn(&azureIotConnectedLed);
+		// on for 1300ms off for 100ms = 1400 ms in total
+		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){1, 300 * OneMS});
+	} else if (dx_isNetworkReady()) {
+		dx_gpioOn(&azureIotConnectedLed);
+		// on for 100ms off for 1300ms = 1400 ms in total
+		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
+
+		if (first_connect) {
+			// set device long/lat using geo location lookup
+			first_connect = false;
+			locInfo = GetLocationData();
+			// update long, lat, and country code device twins
+			dx_deviceTwinReportState(&reportedLatitude, &locInfo->lat);
+			dx_deviceTwinReportState(&reportedLongitude, &locInfo->lng);
+			dx_deviceTwinReportState(&reportedCountryCode, &locInfo->countryCode);
+		}
+	} else {
+		dx_gpioOn(&azureIotConnectedLed);
+		// on for 700ms off for 700ms = 1400 ms in total
+		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 700 * OneMS});
+	}
+}
+
 
 /*Device Twin Handlers******************************************/
 
