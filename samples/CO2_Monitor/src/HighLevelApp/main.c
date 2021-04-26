@@ -100,7 +100,7 @@ static DX_MESSAGE_PROPERTY* telemetryMessageProperties[] = {
 	&(DX_MESSAGE_PROPERTY) { .key = "appid", .value = "co2monitor" },
 	&(DX_MESSAGE_PROPERTY) {.key = "format", .value = "json" },
 	&(DX_MESSAGE_PROPERTY) {.key = "type", .value = "telemetry" },
-	&(DX_MESSAGE_PROPERTY) {.key = "version", .value = "1" }
+	&(DX_MESSAGE_PROPERTY) {.key = "schema", .value = "1" }
 };
 
 /*Timer event handlers******************************************/
@@ -216,7 +216,7 @@ static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 /*Device Twin Handlers******************************************/
 
 /// <summary>
-/// Generic Device Twin Handler. It just sets reported state for the twin
+/// Generic Device Twin Handler to acknowledge device twin received
 /// </summary>
 static void DeviceTwinGenericHandler(DX_DEVICE_TWIN_BINDING* deviceTwinBinding) {
 	dx_deviceTwinReportState(deviceTwinBinding, deviceTwinBinding->twinState);
