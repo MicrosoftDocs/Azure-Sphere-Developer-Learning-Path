@@ -24,6 +24,8 @@
 #include "dx_terminate.h"
 #include "dx_timer.h"
 
+#include "location_from_ip.h"
+
 #include "applibs_versions.h"
 #include <applibs/gpio.h>
 #include <applibs/log.h>
@@ -48,8 +50,7 @@ static void SetHvacStatusColour(int32_t temperature);
 
 DX_USER_CONFIG dx_config;
 enum LEDS { RED, GREEN, BLUE, UNKNOWN };
-static enum LEDS current_led = RED;
-static const char* hvacState[] = { "heating", "off", "cooling" };
+static enum LEDS current_led = UNKNOWN;
 
 static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
 
@@ -77,13 +78,14 @@ static DX_TIMER publishTelemetryTimer = { .period = {4, 0}, .name = "publishTele
 static DX_DEVICE_TWIN_BINDING desiredCO2AlertLevel = { .twinProperty = "DesiredCO2AlertLevel", .twinType = DX_TYPE_INT, .handler = DeviceTwinGenericHandler };
 static DX_DEVICE_TWIN_BINDING desiredTemperature = { .twinProperty = "DesiredTemperature", .twinType = DX_TYPE_INT, .handler = DeviceTwinGenericHandler };
 static DX_DEVICE_TWIN_BINDING reportedCO2Level = { .twinProperty = "ReportedCO2Level", .twinType = DX_TYPE_FLOAT };
-static DX_DEVICE_TWIN_BINDING reportedHvacState = { .twinProperty = "ReportedHvacState",.twinType = DX_TYPE_STRING };
-static DX_DEVICE_TWIN_BINDING reportedTemperature = { .twinProperty = "ReportedTemperature",.twinType = DX_TYPE_FLOAT };
+static DX_DEVICE_TWIN_BINDING reportedLatitude = { .twinProperty = "ReportedLatitude",.twinType = DX_TYPE_FLOAT };
+static DX_DEVICE_TWIN_BINDING reportedLongitude = { .twinProperty = "ReportedLongitude",.twinType = DX_TYPE_FLOAT };
+static DX_DEVICE_TWIN_BINDING reportedCountryCode = { .twinProperty = "ReportedCountryCode",.twinType = DX_TYPE_STRING };
 
 // Initialize Sets
 DX_GPIO* gpioSet[] = { &co2AlertBuzzerPin, &azureIotConnectedLed };
-DX_DEVICE_TWIN_BINDING* deviceTwinBindingSet[] = { 
-	&desiredCO2AlertLevel, &reportedCO2Level, &desiredTemperature, &reportedHvacState, &reportedTemperature };
+DX_DEVICE_TWIN_BINDING* deviceTwinBindingSet[] = {
+	&desiredCO2AlertLevel, &reportedCO2Level, &desiredTemperature, &reportedLatitude, &reportedLongitude, &reportedCountryCode };
 DX_TIMER* timerSet[] = {
 	&connectedLedOnTimer, &connectedLedOffTimer, &measureSensorTimer, &publishTelemetryTimer,
 	&co2AlertBuzzerOnTimer, &co2AlertBuzzerOffOneShotTimer
@@ -113,6 +115,9 @@ static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
 /// Check status of connection to Azure IoT
 /// </summary>
 static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
+	bool first_connect = true;
+	struct location_info* locInfo = NULL;
+
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
 		return;
@@ -122,6 +127,14 @@ static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 		// on for 1300ms off for 100ms = 1400 ms in total
 		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
 		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){1, 300 * OneMS});
+
+		if (first_connect) {
+			first_connect = false;
+			locInfo = GetLocationData();
+			dx_deviceTwinReportState(&reportedLatitude, &locInfo->lat);
+			dx_deviceTwinReportState(&reportedLongitude, &locInfo->lng);
+			dx_deviceTwinReportState(&reportedCountryCode, &locInfo->countryCode);
+		}
 	} else if (dx_isNetworkReady()) {
 		dx_gpioOn(&azureIotConnectedLed);
 		// on for 100ms off for 1300ms = 1400 ms in total
@@ -172,7 +185,6 @@ static void PublishTelemetryHandler(EventLoopTimer* eventLoopTimer) {
 			dx_azureMsgSendWithProperties(msgBuffer, telemetryMessageProperties, NELEMS(telemetryMessageProperties));
 		}
 		dx_deviceTwinReportState(&reportedCO2Level, &co2_ppm);
-		dx_deviceTwinReportState(&reportedTemperature, &temperature);
 	}
 }
 
@@ -228,7 +240,6 @@ static void SetHvacStatusColour(int32_t temperature) {
 			dx_gpioOff(ledRgb[(int)previous_led]); // turn off old current colour
 		}
 		previous_led = current_led;
-		dx_deviceTwinReportState(&reportedHvacState, (void*)hvacState[(int)current_led]);
 	}
 	dx_gpioOn(ledRgb[(int)current_led]);
 }

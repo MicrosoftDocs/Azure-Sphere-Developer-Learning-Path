@@ -28,6 +28,8 @@ add_subdirectory("./embedded-scd" scd30)
 
 set(Source
     "main.c"
+    "location_from_ip.c"
+    "httpGet.c"
 )
 source_group("Source" FILES ${Source})
 
@@ -38,7 +40,7 @@ set(ALL_FILES
 # Create executable
 add_executable(${PROJECT_NAME} ${ALL_FILES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC AZURE_IOT_HUB_CONFIGURED)
-target_link_libraries(${PROJECT_NAME} applibs pthread gcc_s c azure_sphere_devx scd30_lib)
+target_link_libraries(${PROJECT_NAME} applibs pthread gcc_s c azure_sphere_devx scd30_lib curl)
 
 target_include_directories(${PROJECT_NAME} PUBLIC AzureSphereDevX/include )
 

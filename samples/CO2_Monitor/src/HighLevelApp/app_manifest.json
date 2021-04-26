@@ -22,10 +22,12 @@
     ],
     "AllowedConnections": [
       "global.azure-devices-provisioning.net",
-      "iot-hub-dps-azure-sphere.azure-devices-provisioning.net",
-      "iot-hub-azure-sphere.azure-devices.net"
+      "Your_DPS_provisioning_endpoint",
+      "Your_IoT_hub_endpoint",
+      "api.timezonedb.com",
+      "get.geojs.io"
     ],
-    "DeviceAuthentication": "9d7e79eb-e021-43ce-9f2b-fa944b447494"
+    "DeviceAuthentication": "Your_Azure_Sphere_Tenant_ID"
   },
   "ApplicationType": "Default"
 }
