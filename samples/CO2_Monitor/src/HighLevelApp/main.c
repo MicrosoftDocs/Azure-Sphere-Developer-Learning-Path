@@ -80,8 +80,8 @@ static DX_TIMER publishTelemetryTimer = { .period = {4, 0}, .name = "publishTele
 static DX_DEVICE_TWIN_BINDING desiredCO2AlertLevel = { .twinProperty = "DesiredCO2AlertLevel", .twinType = DX_TYPE_INT, .handler = DeviceTwinGenericHandler };
 static DX_DEVICE_TWIN_BINDING desiredTemperature = { .twinProperty = "DesiredTemperature", .twinType = DX_TYPE_INT, .handler = DeviceTwinGenericHandler };
 static DX_DEVICE_TWIN_BINDING reportedCO2Level = { .twinProperty = "ReportedCO2Level", .twinType = DX_TYPE_FLOAT };
-static DX_DEVICE_TWIN_BINDING reportedLatitude = { .twinProperty = "ReportedLatitude",.twinType = DX_TYPE_FLOAT };
-static DX_DEVICE_TWIN_BINDING reportedLongitude = { .twinProperty = "ReportedLongitude",.twinType = DX_TYPE_FLOAT };
+static DX_DEVICE_TWIN_BINDING reportedLatitude = { .twinProperty = "ReportedLatitude",.twinType = DX_TYPE_DOUBLE };
+static DX_DEVICE_TWIN_BINDING reportedLongitude = { .twinProperty = "ReportedLongitude",.twinType = DX_TYPE_DOUBLE };
 static DX_DEVICE_TWIN_BINDING reportedCountryCode = { .twinProperty = "ReportedCountryCode",.twinType = DX_TYPE_STRING };
 
 // Initialize Sets
@@ -94,7 +94,7 @@ DX_TIMER* timerSet[] = {
 };
 
 // Define the message to be sent to Azure IoT Hub
-static const char* MsgTemplate = "{ \"CO2\": %3.2f, \"Temperature\": %3.2f, \"Humidity\": \"%3.1f\", \"Longitude\", %f, \"Latitude\":%f, \"MsgId\":%d }";
+static const char* MsgTemplate = "{ \"CO2\": %3.2f, \"Temperature\": %3.2f, \"Humidity\": %3.1f, \"Longitude\": %lf, \"Latitude\":%lf, \"MsgId\":%d }";
 // Attach these properties when sending telemetry to Azure IoT Hub
 static DX_MESSAGE_PROPERTY* telemetryMessageProperties[] = {
 	&(DX_MESSAGE_PROPERTY) { .key = "appid", .value = "co2monitor" },
@@ -132,18 +132,13 @@ static void CO2AlertBuzzerOnHandler(EventLoopTimer* eventLoopTimer) {
 
 static void PublishTelemetryHandler(EventLoopTimer* eventLoopTimer) {
 	static int msgId = 0;
-	float lng, lat;
 
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
 		return;
 	}
 	if (!isnan(co2_ppm)) {
-
-		lng = locInfo == NULL ? NAN : (float)locInfo->lng;
-		lat = locInfo == NULL ? NAN : (float)locInfo->lat;
-
-		if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, MsgTemplate, co2_ppm, temperature, relative_humidity, lng, lat, ++msgId) > 0) {
+		if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, MsgTemplate, co2_ppm, temperature, relative_humidity, locInfo->lng, locInfo->lat, ++msgId) > 0) {
 			Log_Debug("%s\n", msgBuffer);
 			dx_azureMsgSendWithProperties(msgBuffer, telemetryMessageProperties, NELEMS(telemetryMessageProperties));
 		}
