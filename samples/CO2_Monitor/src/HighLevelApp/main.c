@@ -137,7 +137,7 @@ static void PublishTelemetryHandler(EventLoopTimer* eventLoopTimer) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
 		return;
 	}
-	if (!isnan(co2_ppm)) {
+	if (!isnan(co2_ppm) && locInfo != NULL) {
 		if (snprintf(msgBuffer, JSON_MESSAGE_BYTES, MsgTemplate, co2_ppm, temperature, relative_humidity, locInfo->lng, locInfo->lat, ++msgId) > 0) {
 			Log_Debug("%s\n", msgBuffer);
 			dx_azureMsgSendWithProperties(msgBuffer, telemetryMessageProperties, NELEMS(telemetryMessageProperties));
@@ -174,21 +174,33 @@ static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer) {
 /// </summary>
 static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 	static bool first_connect = true;
+	static int init_sequence = 25;
 
 	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0) {
 		dx_terminate(DX_ExitCode_ConsumeEventLoopTimeEvent);
 		return;
 	}
-	if (dx_azureIsConnected()) {
+
+	if (init_sequence-- > 0) {
+
+		dx_gpioOn(&azureIotConnectedLed);
+		// on for 100ms off for 100ms = 200 ms in total
+		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){0, 200 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
+
+	} else if (dx_azureIsConnected()) {
+
 		dx_gpioOn(&azureIotConnectedLed);
 		// on for 1300ms off for 100ms = 1400 ms in total
 		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
 		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){1, 300 * OneMS});
+
 	} else if (dx_isNetworkReady()) {
+
 		dx_gpioOn(&azureIotConnectedLed);
 		// on for 100ms off for 1300ms = 1400 ms in total
 		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
-		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 700 * OneMS});
 
 		if (first_connect) {
 			// set device long/lat using geo location lookup
@@ -199,11 +211,13 @@ static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 			dx_deviceTwinReportState(&reportedLongitude, &locInfo->lng);
 			dx_deviceTwinReportState(&reportedCountryCode, &locInfo->countryCode);
 		}
+
 	} else {
+
 		dx_gpioOn(&azureIotConnectedLed);
 		// on for 700ms off for 700ms = 1400 ms in total
 		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){1, 400 * OneMS});
-		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 700 * OneMS});
+		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
 	}
 }
 
