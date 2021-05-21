@@ -3,10 +3,10 @@
 enum LEDS { RED, GREEN, BLUE, UNKNOWN };
 static enum LEDS current_led = UNKNOWN;
 
-static DX_GPIO* ledRgb[] = {
-	&(DX_GPIO) { .pin = LED_RED, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true,.name = "red led" },
-	&(DX_GPIO) {.pin = LED_GREEN, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "green led" },
-	&(DX_GPIO) {.pin = LED_BLUE, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "blue led" }
+static DX_GPIO_BINDING* ledRgb[] = {
+	&(DX_GPIO_BINDING) { .pin = LED_RED, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true,.name = "red led" },
+	&(DX_GPIO_BINDING) {.pin = LED_GREEN, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "green led" },
+	&(DX_GPIO_BINDING) {.pin = LED_BLUE, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "blue led" }
 };
 
 static bool rgb_initialized = false;

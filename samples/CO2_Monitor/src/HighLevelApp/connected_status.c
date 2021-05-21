@@ -3,10 +3,10 @@
 static void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer);
 static void ConnectedLedOffHandler(EventLoopTimer* eventLoopTimer);
 
-static DX_GPIO azureIotConnectedLed = { .pin = CONNECTED_LED, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "azureConnectedLed" };
+static DX_GPIO_BINDING azureIotConnectedLed = { .pin = CONNECTED_LED, .direction = DX_OUTPUT, .initialState = GPIO_Value_Low, .invertPin = true, .name = "azureConnectedLed" };
 
-static DX_TIMER connectedLedOffTimer = { .period = {0, 0},.name = "connectedLedOffTimer",.handler = ConnectedLedOffHandler };
-static DX_TIMER connectedLedOnTimer = { .period = {0, 0},.name = "connectedLedOnTimer",.handler = ConnectedLedOnHandler };
+static DX_TIMER_BINDING connectedLedOffTimer = { .period = {0, 0},.name = "connectedLedOffTimer",.handler = ConnectedLedOffHandler };
+static DX_TIMER_BINDING connectedLedOnTimer = { .period = {0, 0},.name = "connectedLedOnTimer",.handler = ConnectedLedOnHandler };
 
 void ConnectedStatusInitialise(void) {
 	dx_gpioOpen(&azureIotConnectedLed);
@@ -43,7 +43,7 @@ void ConnectedLedOnHandler(EventLoopTimer* eventLoopTimer) {
 		dx_timerOneShotSet(&connectedLedOnTimer, &(struct timespec){0, 200 * OneMS});
 		dx_timerOneShotSet(&connectedLedOffTimer, &(struct timespec){0, 100 * OneMS});
 
-	} else if (dx_azureIsConnected()) {
+	} else if (dx_isAzureConnected()) {
 
 		dx_gpioOn(&azureIotConnectedLed);
 		// on for 1300ms off for 100ms = 1400 ms in total
