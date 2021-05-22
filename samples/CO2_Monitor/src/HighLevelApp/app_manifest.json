@@ -17,7 +17,6 @@
     ],
     "AllowedConnections": [
       "global.azure-devices-provisioning.net",
-      "Your_DPS_provisioning_endpoint",
       "Your_IoT_hub_endpoint",
       "api.timezonedb.com",
       "get.geojs.io"
