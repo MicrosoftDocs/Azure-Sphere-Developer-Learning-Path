@@ -272,7 +272,7 @@ static bool ProvisionWithDpsPnP(void)
 	PROV_DEVICE_RESULT prov_result;
 	bool result = false;
 	char* dtdlBuffer = NULL;
-	int deviceIdForDaaCertUsage = 0;  // set DaaCertUsage to false
+	int deviceIdForDaaCertUsage = 1;  // set DaaCertUsage to true
 
 	if (!lp_isNetworkReady() || !lp_isDeviceAuthReady()) {
 		return false;
@@ -348,7 +348,7 @@ static bool ProvisionWithDpsPnP(void)
 		goto cleanup;
 	}
 
-	if ((iothubClientHandle = IoTHubDeviceClient_LL_CreateWithAzureSphereFromDeviceAuth(iotHubUri, MQTT_Protocol)) == NULL) {
+	if ((iothubClientHandle = IoTHubDeviceClient_LL_CreateWithAzureSphereFromDeviceAuth(iotHubUri, &MQTT_Protocol)) == NULL) {
 		Log_Debug("ERROR: Failed to create client IoT Hub Client Handle\n");
 		goto cleanup;
 	}
