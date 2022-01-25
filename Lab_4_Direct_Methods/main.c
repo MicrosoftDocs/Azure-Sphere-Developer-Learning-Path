@@ -18,7 +18,7 @@
  *
  *   DISCLAIMER
  *   ==========
- *   The learning_path_libs functions provided in the learning_path_libs folder:
+ *   The functions provided in the LearningPathLibrary folder:
  *
  *	   1. are prefixed with lp_, typedefs are prefixed with LP_
  *	   2. are built from the Azure Sphere SDK Samples at https://github.com/Azure/azure-sphere-samples
