@@ -1,5 +1,0 @@
-# Ignore output directories
-/out/
-/install/
-/.vs/
-*.pdf

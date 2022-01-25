@@ -18,8 +18,25 @@ set(AVNET TRUE "AVNET Azure Sphere Starter Kit")
 cmake_minimum_required (VERSION 3.10)
 project (AzureSphereIoTCentral C)
 
-azsphere_configure_tools(TOOLS_REVISION "21.10")
-azsphere_configure_api(TARGET_API_SET "11")
+# These labs are evergreen
+# The CMake Azure Sphere configuration updates to match the Azure Sphere SDK you've installed on your computer.
+# For production applications, setting the Azure Sphere configuration in CMake should be intentional and tested.
+get_filename_component(PARENT_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
+get_filename_component(PARENT_DIR ${PARENT_DIR} DIRECTORY)
+get_filename_component(PARENT_DIR ${PARENT_DIR} DIRECTORY)
+
+if (EXISTS "${PARENT_DIR}/tools/cmake/azsphere_config.cmake")
+    include(../../../tools/cmake/azsphere_config.cmake)
+    auto_generate_azsphere_config()
+else()
+
+    # For information on setting tools revision and target api set see 
+    # https://docs.microsoft.com/en-us/azure-sphere/app-development/using-cmake-functions
+
+    azsphere_configure_tools(TOOLS_REVISION "21.10")
+    azsphere_configure_api(TARGET_API_SET "11")
+
+endif()
 
 
 add_subdirectory("../../../LearningPathLibrary" out)

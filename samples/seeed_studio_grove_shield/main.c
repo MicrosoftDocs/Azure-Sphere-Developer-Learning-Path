@@ -1,29 +1,43 @@
 ﻿/*
- *   Please read the disclaimer and the developer board selection section below
+ *   AzureSphereDevX
+ *   ===============
+ *   These labs are built on version 1 of the Azure Sphere Learning Path library.
+ *   Version 2 of the Learning Path library is called AzureSphereDevX.
  *
+ *   The AzureSphereDevX documentation and examples are located at https://github.com/Azure-Sphere-DevX/AzureSphereDevX.Examples.
+ *   AzureSphereDevX builds on the Azure Sphere Learning Path library incorporating more customer experiences.
+ *   Everything you learn completing these labs is relevant to AzureSphereDevX.
+ * 	 
+ * 
+ *   LAB UPDATES
+ *   ===========
+ *   This lab now use the LP_TIMER_HANDLER macro to define timer handlers
+ *   This lab now use the LP_DEVICE_TWIN_HANDLER macro to define device twin handlers
+ *   All application declarations are located in main.h
+ *    
  *
  *   DISCLAIMER
+ *   ==========
+ *   The functions provided in the LearningPathLibrary folder:
  *
- *   The learning_path_libs functions provided in the learning_path_libs folder:
- *
- *	   1. are NOT supported Azure Sphere APIs.
- *	   2. are prefixed with lp_, typedefs are prefixed with LP_
- *	   3. are built from the Azure Sphere SDK Samples at https://github.com/Azure/azure-sphere-samples
- *	   4. are not intended as a substitute for understanding the Azure Sphere SDK Samples.
- *	   5. aim to follow best practices as demonstrated by the Azure Sphere SDK Samples.
- *	   6. are provided as is and as a convenience to aid the Azure Sphere Developer Learning experience.
+ *	   1. are prefixed with lp_, typedefs are prefixed with LP_
+ *	   2. are built from the Azure Sphere SDK Samples at https://github.com/Azure/azure-sphere-samples
+ *	   3. are not intended as a substitute for understanding the Azure Sphere SDK Samples.
+ *	   4. aim to follow best practices as demonstrated by the Azure Sphere SDK Samples.
+ *	   5. are provided as is and as a convenience to aid the Azure Sphere Developer Learning experience.
  *
  *
  *   DEVELOPER BOARD SELECTION
- *
+ *   =========================
  *   The following developer boards are supported.
  *
  *	   1. AVNET Azure Sphere Starter Kit.
- *	   2. Seeed Studio Azure Sphere MT3620 Development Kit aka Reference Design Board or rdb.
- *	   3. Seeed Studio Seeed Studio MT3620 Mini Dev Board.
+ *     2. AVNET Azure Sphere Starter Kit Revision 2.
+ *	   3. Seeed Studio Azure Sphere MT3620 Development Kit aka Reference Design Board or rdb.
+ *	   4. Seeed Studio Seeed Studio MT3620 Mini Dev Board.
  *
  *   ENABLE YOUR DEVELOPER BOARD
- *
+ *   ===========================
  *   Each Azure Sphere developer board manufacturer maps pins differently. You need to select the configuration that matches your board.
  *
  *   Follow these steps:
@@ -33,77 +47,13 @@
  *	   3. Click File, then Save to save the CMakeLists.txt file which will auto generate the CMake Cache.
  */
 
+#include "main.h"
+ 
 
- // Hardware definition
-#include "hw/azure_sphere_learning_path.h"
-
-// Learning Path Libraries
-#include "azure_iot.h"
-#include "exit_codes.h"
-#include "globals.h"
-#include "peripheral_gpio.h"
-#include "terminate.h"
-#include "timer.h"
-
-// System Libraries
-#include "applibs_versions.h"
-#include <applibs/gpio.h>
-#include <applibs/log.h>
-#include <applibs/powermanagement.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <time.h>
-
-// Hardware specific
-#ifdef OEM_AVNET
-#include "AVNET/board.h"
-#include "AVNET/imu_temp_pressure.h"
-#include "AVNET/light_sensor.h"
-#endif // OEM_AVNET
-
-// Hardware specific
-#ifdef OEM_SEEED_STUDIO
-#include "SEEED_STUDIO/board.h"
-#endif // SEEED_STUDIO
-
-
-// Number of bytes to allocate for the JSON telemetry message for IoT Central
-#define JSON_MESSAGE_BYTES 256  
-
-// Forward signatures
-static void ReadSensorHandler(EventLoopTimer* eventLoopTimer);
-static void SampleRateHandler(LP_DEVICE_TWIN_BINDING* deviceTwinBinding);
-
-// Variables
-static char msgBuffer[JSON_MESSAGE_BYTES] = { 0 };
-
-// Telemetry message template and properties
-static const char* MsgTemplate = "{ \"Temperature\": \"%3.2f\", \"Humidity\": \"%3.1f\", \"Pressure\":\"%3.1f\", \"Light\":%d, \"MsgId\":%d }";
-
-static LP_MESSAGE_PROPERTY messageAppId = { .key = "appid", .value = "hvac" };
-static LP_MESSAGE_PROPERTY messageFormat = { .key = "format", .value = "json" };
-static LP_MESSAGE_PROPERTY telemetryMessageType = { .key = "type", .value = "telemetry" };
-static LP_MESSAGE_PROPERTY messageVersion = { .key = "version", .value = "1" };
-
-static LP_MESSAGE_PROPERTY* telemetryMessageProperties[] = { &messageAppId, &telemetryMessageType, &messageFormat, &messageVersion };
-
-// Timer
-static LP_TIMER readSensorTimer = {
-	.period = { 5, 0 },
-	.name = "readSensorTimer",
-	.handler = ReadSensorHandler
-};
-
-static void ReadSensorHandler(EventLoopTimer* eventLoopTimer)
+static LP_TIMER_HANDLER(ReadSensorHandler)
 {
 	static int msgId = 0;
 	static LP_ENVIRONMENT environment;
-
-	if (ConsumeEventLoopTimerEvent(eventLoopTimer) != 0)
-	{
-		lp_terminate(ExitCode_ConsumeEventLoopTimeEvent);
-		return;
-	}
 
 	if (lp_readTelemetry(&environment))
 	{
@@ -113,16 +63,9 @@ static void ReadSensorHandler(EventLoopTimer* eventLoopTimer)
 		}
 	}
 }
+LP_TIMER_HANDLER_END
 
-// Cloud to Device
-static LP_DEVICE_TWIN_BINDING sampleRate_DeviceTwin = {
-	.twinProperty = "SampleRateSeconds",
-	.twinType = LP_TYPE_INT,
-	.handler = SampleRateHandler
-};
-
-
-static void SampleRateHandler(LP_DEVICE_TWIN_BINDING* deviceTwinBinding)
+static LP_DEVICE_TWIN_HANDLER(SampleRateHandler, deviceTwinBinding)
 {
 	struct timespec sampleRateSeconds = { *(int*)deviceTwinBinding->twinState, 0 };
 
@@ -131,12 +74,7 @@ static void SampleRateHandler(LP_DEVICE_TWIN_BINDING* deviceTwinBinding)
 		lp_timerChange(&readSensorTimer, &sampleRateSeconds);
 	}
 }
-
-// Sets
-static LP_TIMER* timerSet[] = { &readSensorTimer };
-static LP_GPIO* gpioSet[] = { };
-static LP_DEVICE_TWIN_BINDING* deviceTwinBindingSet[] = { &sampleRate_DeviceTwin };
-
+LP_DEVICE_TWIN_HANDLER_END
 
 static void InitPeripheralsAndHandlers(void)
 {
@@ -167,28 +105,15 @@ static void ClosePeripheralsAndHandlers(void)
 int main(int argc, char* argv[])
 {
 	lp_registerTerminationHandler();
-	lp_processCmdArgs(argc, argv);
-
-	if (strlen(scopeId) == 0)
+	if (!lp_configValidate(&lp_config))
 	{
-		Log_Debug("ScopeId needs to be set in the app_manifest CmdArgs\n");
-		return ExitCode_Missing_ID_Scope;
+		return lp_getTerminationExitCode();
 	}
 
 	InitPeripheralsAndHandlers();
 
-	// Main loop
-	while (!lp_isTerminationRequired())
-	{
-
-		int result = EventLoop_Run(lp_timerGetEventLoop(), -1, true);
-
-		// Continue if interrupted by signal, e.g. due to breakpoint being set.
-		if (result == -1 && errno != EINTR)
-		{
-			lp_terminate(ExitCode_Main_EventLoopFail);
-		}
-	}
+    // Run main event loop. This call blocks until termination requested
+	lp_eventLoopRun();
 
 	ClosePeripheralsAndHandlers();
 
