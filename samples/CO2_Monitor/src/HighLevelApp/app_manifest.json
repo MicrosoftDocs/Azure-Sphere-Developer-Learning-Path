@@ -1,0 +1,27 @@
+{
+  "SchemaVersion": 1,
+  "Name": "AzureSphereIoTCentral",
+  "ComponentId": "25025d2c-66da-4448-bae1-ac26fcdd3627",
+  "EntryPoint": "/bin/app",
+  "CmdArgs": [ "--ScopeID", "Your_ID_Scope" ],
+  "Capabilities": {
+    "Gpio": [
+      "$CONNECTED_LED",
+      "$CO2_ALERT",
+      "$LED_RED",
+      "$LED_GREEN",
+      "$LED_BLUE"
+    ],
+    "I2cMaster": [
+      "$I2C_CO2_SENSOR"
+    ],
+    "AllowedConnections": [
+      "global.azure-devices-provisioning.net",
+      "Your_IoT_hub_endpoint",
+      "api.timezonedb.com",
+      "get.geojs.io"
+    ],
+    "DeviceAuthentication": "Your_Azure_Sphere_Tenant_ID"
+  },
+  "ApplicationType": "Default"
+}
