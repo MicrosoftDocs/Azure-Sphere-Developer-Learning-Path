@@ -19,8 +19,8 @@
       "ctestCommandArgs": "",
       "variables": [
         {
-          "name": "AZURE_SPHERE_TARGET_API_SET",
-          "value": "11"
+            "name": "AZURE_SPHERE_TARGET_API_SET",
+            "value": "latest-lts"
         }
       ]
     },
@@ -38,8 +38,8 @@
       "ctestCommandArgs": "",
       "variables": [
         {
-          "name": "AZURE_SPHERE_TARGET_API_SET",
-          "value": "11"
+            "name": "AZURE_SPHERE_TARGET_API_SET",
+            "value": "latest-lts"
         }
       ]
     }
